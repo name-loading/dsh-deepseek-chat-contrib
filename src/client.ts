@@ -15,6 +15,9 @@ import type { DshChatUIBridge, DshChatViewState, DshChatViewportRect } from './u
 import { DshChatWebSurface } from './web-surface.js'
 import { emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from './website-navigation.js'
 import { createSidebarBinding } from './sidebar-adapter.js'
+import { createHandoffController } from './handoff-client.js'
+import { DshChatHandoffDialog, DshChatHandoffInsertion } from './handoff-ui.js'
+import type { WebsiteHandoffPort } from './handoff-types.js'
 
 export const name = 'dsh-deepseek-chat'
 export const inject = ['slots', 'layout', 'remote']
@@ -80,6 +83,8 @@ export function apply(ctx: Context): void {
   let conversationActionPending = false
   let navigationHandler: ((command: WebsiteCommand) => Promise<void>) | null = null
   let bridge: DshChatUIBridge
+  let websiteHandoff: WebsiteHandoffPort | null = null
+  const handoff = createHandoffController(ctx, () => websiteHandoff, () => bridge.selectMode('harness'))
   let cached: DshChatViewState
   let sidebar: ReturnType<typeof createSidebarBinding> | undefined
   const mode = new ModeController({
@@ -294,6 +299,12 @@ export function apply(ctx: Context): void {
     return clearing
   }
   bridge = {
+    openHandoff: () => { void handoff.open() },
+    bindWebsiteHandoff: (generation, port) => {
+      if (disposed || generation !== authorizationGeneration) return () => {}
+      websiteHandoff = port
+      return () => { if (websiteHandoff === port) websiteHandoff = null }
+    },
     getSnapshot: () => cached,
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener) } },
     selectMode: selected => { mode.select(selected) },
@@ -609,7 +620,12 @@ export function apply(ctx: Context): void {
     ctx.slots.inject('sidebar.brand.name', () => ctx.slots.register({ name: 'sidebar.brand.name', priority: -100, inject: () => ({ bridge }) }, DshChatBrandName))
     ctx.slots.inject('shell.overlay', () => [
       ctx.slots.register({ name: 'shell.overlay', id: 'dsh-deepseek-chat.website', order: 90, inject: () => ({ bridge, nativeBrowser }) }, DshChatWebSurface),
+      ctx.slots.register({ name: 'shell.overlay', id: 'dsh-deepseek-chat.handoff', order: 100, inject: () => ({ controller: handoff }) }, DshChatHandoffDialog),
     ])
+    ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
+      name: 'conversation.input.left', id: 'dsh-deepseek-chat.handoff-insertion',
+      inject: sessionId => ({ controller: handoff, sessionId: String(sessionId) }),
+    }, DshChatHandoffInsertion))
     const stopMode = mode.subscribe(publish)
     const stopPanel = ctx.layout.panelInfo.subscribe(() => { mode.observePanel(ctx.layout.panelInfo.getSnapshot().activePanelId) })
     const refreshOnFocus = () => { void refreshAuthorization() }
@@ -617,6 +633,7 @@ export function apply(ctx: Context): void {
     void refreshAuthorization()
     return () => {
       clearTimeout(logoutTimer)
+      websiteHandoff = null; handoff.dispose()
       stopSearchGuard(); for (const cleanup of guardedEntries.values()) cleanup(); guardedEntries.clear()
       mode.dispose(); sidebar?.dispose(); releaseStyles(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)

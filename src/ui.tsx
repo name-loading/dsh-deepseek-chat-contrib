@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { createElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { BrandWordmark, IconSearchOutlineRegular, IconCloseFillRegular, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { BrandWordmark, IconSearchOutlineRegular, IconCloseFillRegular, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, IconRightUpOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ComponentType } from 'react'
 import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -10,6 +10,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { acquireChatStyles, ensureChatStyles } from './styles.js'
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js'
 import type { WebsiteSession } from './protocol.js'
+import type { WebsiteHandoffPort } from './handoff-types.js'
 
 export type DshChatMode = 'chat' | 'harness'
 
@@ -52,6 +53,8 @@ export interface DshChatViewState {
 export interface DshChatUIBridge {
   getSnapshot(): DshChatViewState
   subscribe(listener: () => void): () => void
+  openHandoff(): void
+  bindWebsiteHandoff(generation: number, port: WebsiteHandoffPort): () => void
   selectMode(mode: DshChatMode): void
   refreshAuthorization(): void
   manageAccount(): void
@@ -307,6 +310,7 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
         </div>
         <div className="dsh-chat-search-actions"><Tooltip label={refreshing ? '正在刷新官网对话列表…' : '刷新官网对话列表'} delayMs={500}><button type="button" className="dsh-chat-icon-button" aria-label="刷新官网对话列表" aria-busy={refreshing} disabled={refreshDisabled} onClick={()=>bridge.refreshWebsiteNavigation()}><IconRefreshOutlineRegular size={14} className={refreshing ? 'dsh-chat-refreshing' : undefined}/></button></Tooltip></div>
       </header>
+      <button type="button" className="dsh-chat-handoff-entry" disabled={navigation.authenticated!==true || state.webLoading || refreshing} onClick={()=>bridge.openHandoff()}><IconRightUpOutlineRegular size={16}/><span>交给 Harness</span></button>
       <div className="dsh-chat-navigation-list">
         {refreshing && <p className="dsh-chat-navigation-status" role="status">正在刷新官网对话列表…</p>}
         {navigation.authenticated===true && navigation.status==='ready' ? <>
@@ -360,6 +364,7 @@ export function DshChatLeadingControls({bridge}: PropsRuntime<'shell.leading'> &
   return <div className="dsh-chat-leading"><DshChatStyles />
     <Tooltip label="展开侧边栏" delayMs={500}><button type="button" aria-label="展开侧边栏" onClick={() => bridge.toggleSidebar()}><IconPanelLeftOutlineRegular size={16}/></button></Tooltip>
     <Tooltip label="新建对话" delayMs={500}><button type="button" aria-label="新建官网对话" disabled={!state.modeEnabled || !state.websiteNavigation.canCreate} onClick={() => bridge.commandWebsite({type:'new'})}><IconNewChatOutlineRegular size={16}/></button></Tooltip>
+    <button type="button" className="dsh-chat-handoff-leading" disabled={state.websiteNavigation.authenticated!==true || state.webLoading} onClick={()=>bridge.openHandoff()}><IconRightUpOutlineRegular size={14}/><span>交给 Harness</span></button>
   </div>
 }
 

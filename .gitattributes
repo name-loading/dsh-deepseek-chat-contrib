@@ -1,0 +1,13 @@
+# The prebuilt manifest hashes exact source and artifact bytes across checkouts.
+# Keep these text files LF even with core.autocrlf=true on Windows.
+/.gitattributes text eol=lf
+/src/** text eol=lf
+/lib/** text eol=lf
+/scripts/** text eol=lf
+/assets/icon.svg text eol=lf
+/package.json text eol=lf
+/pnpm-lock.yaml text eol=lf
+/tsconfig.json text eol=lf
+/cordis.patch.yml text eol=lf
+/README.md text eol=lf
+/README.en.md text eol=lf

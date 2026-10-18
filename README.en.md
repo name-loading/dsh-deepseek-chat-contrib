@@ -99,6 +99,14 @@ See the [official DSH plugin installation documentation](https://deepseek-harnes
 2. Complete sign-in on the real website in the CHAT main page. CHAT Settings displays account status and language. Its sign-in button closes Settings and opens CHAT; account details and conversations synchronize afterward without a manual refresh.
 3. Check the remembered sign-in status in **Settings → CHAT Settings**, then choose your language. Signing out clears the plugin’s saved grant and signs out of the website; the mode switch remains available.
 
+### Hand off a CHAT conversation to Harness
+
+1. In CHAT, choose **Hand off to Harness → Capture this branch**, preview the captured conversation, and select the turns to include (all selected by default). When complete history cannot be proven, explicitly accept the loaded range.
+2. Choose a model already configured in HARNESS to generate a summary, then edit the task brief. Selected turns are sent to that model's provider and may incur API charges. Website summaries are not exposed in the current UI; after a failure, retry or explicitly choose an original-file reference without a summary.
+3. Choose a local workspace and a new or existing session, then select **Save and open HARNESS draft**.
+
+Selected source text is saved to `.dsh/chat-handoffs/<id>/transcript.md` under the target working directory. The composer receives only the brief and file reference, awaiting your manual send. Existing drafts, file references and attachments are preserved; insert at the cursor or create a separate session. Reasoning is excluded. Source images and attachments retain visible descriptions, links or confirmed paths only; binary files are not copied. Changing turn selection clears a generated brief so its scope cannot silently diverge from the transcript.
+
 Website sign-in happens inside the plugin. Automatic authorization from an external browser would require a Chat authorization exchange interface from the website, which has not been confirmed. Signing in elsewhere does not automatically sign in this plugin.
 
 If the website cannot load, use the retry action in its status panel. If the sign-in persistence service cannot connect, the interface shows an error and a retry action. The plugin automatically collapses the website’s fixed environment warning; other notices, verification challenges and authentication errors remain under website control.
@@ -113,6 +121,7 @@ Refreshing the list reloads the current website page and retains the conversatio
 - **Remembered sign-in:** the website session is separate from Safari/Chrome and from the DSH platform account. Expiry, revocation or website changes may require signing in again. Long-term behavior, full uninstall and broader platform coverage still require further validation.
 - **Page lifetime:** manual mode switching retains the website page. Disabling or uninstalling the plugin, or fully quitting DSH, destroys the container. The plugin does not back up unsent drafts or replace the website’s generation controls.
 - **Browser capabilities:** downloads, device permissions and some popups are restricted by DSH Browser policy. Sending, uploads, cross-browser history consistency and long-term operation require broader real-world validation.
+- **Handoff scope:** only captured, selected turns of the current branch are included; unloaded history is not guaranteed. A local working directory is required. Website structures and desktop workflows across platforms still require continued validation.
 
 ## Privacy and data
 
@@ -120,7 +129,7 @@ DeepSeek’s website handles chats and account history. To adapt the interface, 
 
 Remembered website sign-in processes only the minimum grant data from the plugin’s own `chat.deepseek.com` page and stores it through the official DSH credentials service. The plugin derives a separate record identifier from the profile path supplied by the DSH launcher, keeping profiles separate and associating the grant with its website account. Signing out clears the previous grant and fences off late save operations. Without trusted profile context, normal website sign-in still works, but it cannot be remembered. This depends on the website’s current implementation, is not a stable official OAuth interface and does not promise permanent sign-in.
 
-The plugin does not store passwords, cookies or message bodies, read tokens belonging to DSH or other plugins, access other browsers’ sign-in data, call private authentication APIs, modify the DSH application package or disable web security. See the [architecture notes](docs/architecture.md) and [website session notes](docs/browser-session-capability.md) for the data flow and authorization boundaries; these technical notes are in Chinese.
+The plugin does not store passwords or cookies, or save message bodies in the background. Only an explicit handoff reads the current branch and saves selected source text in the chosen local directory; generating a summary sends that text to the selected Harness model. The plugin does not read tokens belonging to DSH or other plugins, access other browsers’ sign-in data, call private authentication APIs, modify the DSH application package or disable web security. See the [architecture notes](docs/architecture.md) and [website session notes](docs/browser-session-capability.md) for the data flow and authorization boundaries; these technical notes are in Chinese.
 
 ## Development and packaging
 

@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Handoff fixture</title>
+<style>body { margin:0 } [data-dsh-chat-content]{height:700px} #history{height:460px;overflow:auto} article{padding:12px} textarea{width:400px;height:80px} .thinking{display:block}</style>
+<main data-dsh-chat-content><div id="history">
+<article data-virtual-list-item-key="u1"><div class="fbb737a4">Explain <strong>carefully</strong><br>next line</div><a data-attachment href="file:///D:/fixtures/report.txt" download="report.txt">report.txt</a></article>
+<article data-virtual-list-item-key="a1"><div class="thinking" data-thinking>PRIVATE THOUGHT</div><div class="ds-markdown"><h2>Result</h2><p>Literal *stars* and _underscores_ and [brackets].</p><pre><code class="language-txt">before
+```
+
+
+
+ after</code></pre><p>Use <a href="https://example.com/docs">docs</a> and <code>a*b</code>.</p><pre><code class="language-ts">const x = `code`;
+console.log(x)</code></pre><ul><li>One<ul><li>Nested</li></ul></li><li>Two</li></ul><table><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody><tr><td>A|B</td><td>2</td></tr></tbody></table><p><span class="katex"><span aria-hidden="true">LOSSY</span><math><semantics><annotation encoding="application/x-tex">x^2+1</annotation></semantics></math></span></p></div><button aria-label="Copy">Copy</button><button aria-label="Regenerate">Retry</button></article>
+</div><form><textarea placeholder="Message DeepSeek"></textarea><button type="submit" disabled aria-label="Send message">Send</button></form></main>
+<script>
+window.fixtureSends=0;
+document.querySelector('textarea').addEventListener('input',()=>setTimeout(()=>document.querySelector('button[type="submit"]').disabled=!document.querySelector('textarea').value,20));
+document.querySelector('form').addEventListener('submit', event => {
+ event.preventDefault(); const input=document.querySelector('textarea'); if(!input.value) return; window.fixtureSends++;
+ const user=document.createElement('article');user.dataset.virtualListItemKey='u-summary';const bubble=document.createElement('div');bubble.className='fbb737a4';bubble.textContent=input.value;user.append(bubble);document.querySelector('#history').append(user);input.value='';
+ const answer=document.createElement('article');answer.dataset.virtualListItemKey='a-summary';answer.innerHTML='<div class="ds-markdown"><p>Summary from fixture.</p></div>';
+ document.querySelector('#history').append(answer); const stop=document.createElement('button');stop.setAttribute('aria-label','Stop generating');document.querySelector('form').append(stop);
+ setTimeout(()=>{stop.remove();if(!window.fixtureNeverComplete){const copy=document.createElement('button');copy.setAttribute('aria-label','Copy');answer.append(copy);const retry=document.createElement('button');retry.setAttribute('aria-label','Regenerate');answer.append(retry)}},50);
+});
+</script>

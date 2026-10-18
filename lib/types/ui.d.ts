@@ -2,6 +2,7 @@ import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js';
 import type { WebsiteSession } from './protocol.js';
+import type { WebsiteHandoffPort } from './handoff-types.js';
 export type DshChatMode = 'chat' | 'harness';
 export interface DshChatViewportRect {
     readonly left: number;
@@ -40,6 +41,8 @@ export interface DshChatViewState {
 export interface DshChatUIBridge {
     getSnapshot(): DshChatViewState;
     subscribe(listener: () => void): () => void;
+    openHandoff(): void;
+    bindWebsiteHandoff(generation: number, port: WebsiteHandoffPort): () => void;
     selectMode(mode: DshChatMode): void;
     refreshAuthorization(): void;
     manageAccount(): void;

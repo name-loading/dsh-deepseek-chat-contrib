@@ -22,12 +22,12 @@ function harness(original: string | null = 'plugins', compatible = true) {
     navigate: (next: string | null) => { panel = next; controller.observePanel(next) } }
 }
 
-test('startup gate, direct panel entry, and missing Desktop never bypass authorization', () => {
+test('website entry is independent of Host login while missing Desktop blocks it', () => {
   const h = harness()
-  assert.equal(h.controller.select('chat'), false)
+  assert.equal(h.controller.select('chat'), true)
   h.navigate(CHAT_PANEL)
-  assert.equal(h.panel(), 'plugins')
-  assert.equal(h.mounted(), 0)
+  assert.equal(h.panel(), CHAT_PANEL)
+  assert.equal(h.mounted(), 1)
   const web = harness(null, false)
   web.controller.updateAuthorization(authorized())
   assert.equal(web.controller.select('chat'), false)
@@ -46,20 +46,12 @@ test('valid refresh keeps chosen mode and one original panel; manual exit restor
   assert.deepEqual(h.order.slice(-2), ['panel:plugins', 'unmount'])
 })
 
-test('confirmed signout and account replacement recover immediately without auto reentry', () => {
-  const h = harness(null)
-  h.controller.updateAuthorization(authorized())
-  h.controller.select('chat')
+test('Host identity changes invalidate work while preserving CHAT mode', () => {
+  const h = harness(null); h.controller.updateAuthorization(authorized()); h.controller.select('chat')
   h.controller.updateAuthorization({ status: 'unauthorized', accountId: null, epoch: 'closed', error: null })
-  assert.equal(h.panel(), null)
-  assert.equal(h.controller.canEnter(), false)
-  assert.equal(h.mounted(), 0)
+  assert.equal(h.panel(), CHAT_PANEL); assert.equal(h.controller.canEnter(), true); assert.equal(h.mounted(), 1)
   h.controller.updateAuthorization(authorized('B', 'grant-b'))
-  assert.equal(h.controller.getSnapshot().mode, 'harness')
-  h.controller.select('chat')
-  h.controller.updateAuthorization(authorized('A', 'grant-new'))
-  assert.equal(h.controller.getSnapshot().mode, 'harness')
-  assert.equal(h.panel(), null)
+  assert.equal(h.controller.getSnapshot().mode, 'chat'); assert(h.order.includes('cancel:A'))
 })
 
 test('network refresh error preserves official valid identity; disposal restores null and blocks later entry', () => {

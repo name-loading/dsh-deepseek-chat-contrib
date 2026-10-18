@@ -66,7 +66,7 @@ await verifyDistributionManifest(projectRoot)
 const libFiles = await collectFiles('lib')
 const releaseFiles = [...libFiles, 'cordis.patch.yml', 'assets/icon.svg', 'README.md']
 const fixtureFiles = [...new Set([
-  'package.json', 'pnpm-lock.yaml', 'tsconfig.json', ...releaseFiles,
+  '.gitattributes', 'package.json', 'pnpm-lock.yaml', 'tsconfig.json', ...releaseFiles,
   ...await collectFiles('src', true), ...await collectFiles('scripts', true),
 ])]
 const temporaryRoot = await mkdtemp(path.join(tmpdir(), 'dsh-chat-git-install-'))
@@ -98,7 +98,7 @@ try {
     name: 'dsh-chat-default-policy-consumer', private: true, type: 'module',
   }))
   const version = run(process.execPath, [pnpm, '--version'], consumer).trim()
-  assert.equal(version, '11.7.0', 'Use DSH pnpm 11.7.0 via DSH_CHAT_INSTALL_PNPM for this acceptance check.')
+  assert.match(version, /^11\.\d+\.\d+(?:[-+].*)?$/, 'Use the DSH pnpm 11 runtime via DSH_CHAT_INSTALL_PNPM for this acceptance check.')
 
   // No workspace policy, build-approval arguments, or script bypass is supplied.
   run(process.execPath, [

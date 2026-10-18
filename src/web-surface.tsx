@@ -5,6 +5,7 @@ import type { DesktopBrowserBridge, DesktopBrowserReservation } from '@deepseek-
 import { DshChatStyles, useDshChat, type DshChatBridgeProps } from './ui.js'
 import { emptyNavigation, parseWebsiteNavigation, websiteCommandScript, type WebsiteCommand } from './website-navigation.js'
 import { parseWebsiteSession, websiteSessionCaptureScript, websiteSessionRestoreScript } from './website-session.js'
+import { createWebsiteHandoffPort } from './website-handoff.js'
 
 const WEBSITE_URL = 'https://chat.deepseek.com/'
 
@@ -136,6 +137,8 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     let lastError: string | null = null
     let navigationRevision = 0
     let documentRevision = 0
+    const handoffIdentityListeners = new Set<() => void>()
+    const notifyHandoffIdentity = () => { for (const listener of handoffIdentityListeners) listener() }
     let documentPresented = false
     let restorationAttempted = false
     let restoredFromVault = false
@@ -162,6 +165,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     }
     const resetDocumentPresentation = () => {
       documentRevision++
+      notifyHandoffIdentity()
       documentPresented=false
       setPresentationReady(false)
       bridge.reportWebsiteNavigation(generation, emptyNavigation(), true)
@@ -194,6 +198,24 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     const approvedOrigin = () => {
       try { return new URL(current.getURL()).origin==='https://chat.deepseek.com' } catch { return false }
     }
+    const handoffPort = createWebsiteHandoffPort({
+      execute: executeScript,
+      lifetime: events.signal,
+      subscribeIdentityChange: listener => {
+        handoffIdentityListeners.add(listener)
+        const stop = bridge.subscribe(listener)
+        return () => { handoffIdentityListeners.delete(listener); stop() }
+      },
+      identity: (allowModeChange = false) => {
+        const snapshot = bridge.getSnapshot()
+        if (!active() || !approvedOrigin() || (!allowModeChange && snapshot.mode !== 'chat')
+          || snapshot.websiteAuthenticationStatus !== 'signed-in' || snapshot.settingsOpen
+          || snapshot.websiteNavigationRefreshing) throw new Error('当前官网对话尚未就绪，或登录与页面状态已变化。')
+        return JSON.stringify([generation, documentRevision, snapshot.websiteAuthenticationRevision, current.getURL()])
+      },
+    })
+    const stopHandoff = bridge.bindWebsiteHandoff(generation, handoffPort)
+    events.signal.addEventListener('abort', stopHandoff, { once: true })
     const prepareSession = async (): Promise<boolean> => {
       if(restorationAttempted) return true
       restorationAttempted=true
@@ -368,6 +390,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     current.addEventListener('did-start-loading', () => { report(true) }, { signal: events.signal })
     current.addEventListener('did-navigate-in-page', event => {
       if ((event as Event & { readonly isMainFrame?: boolean }).isMainFrame !== true) return
+      notifyHandoffIdentity()
       fastPollingUntil=Date.now()+8000;syncNavigation()
     }, { signal: events.signal })
     current.addEventListener('did-stop-loading', () => { report(false); syncNavigation() }, { signal: events.signal })
@@ -376,6 +399,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
       if (failure.isMainFrame === true && failure.errorCode !== -3) report(false, 'DeepSeek 网页加载失败。请检查网络后重试。')
     }, { signal: events.signal })
     current.addEventListener('render-process-gone', () => {
+      documentRevision++; notifyHandoffIdentity()
       needsRecovery.current = true
       bridge.reportWebsiteNavigation(generation, { status: 'unsupported', conversations: [], selectedHref: null, canCreate: false, error: null })
       report(false, '网页进程已退出，请点击「重试网页」。')

@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>Virtual history fixture</title>
+<style>body{margin:0}main{height:600px}#history{height:240px;overflow:auto}#track{height:1200px;position:relative}article{position:absolute;height:80px;width:500px}textarea{width:400px;height:60px}</style>
+<main data-dsh-chat-content><div id="history"><div id="track"></div></div><form><textarea></textarea><button type="submit">Send</button></form></main>
+<script>(()=>{
+const history=document.querySelector('#history'), track=document.querySelector('#track');
+function render(){const start=Math.max(0,Math.floor(history.scrollTop/100)-1),end=Math.min(12,start+6);track.replaceChildren();for(let i=start;i<end;i++){const article=document.createElement('article');article.dataset.virtualListItemKey='message-'+i;article.style.top=(i*100)+'px';article.innerHTML='<div class="'+(i%2 ? 'ds-markdown' : 'fbb737a4')+'">Message '+i+'</div>'+(i===2?'<button aria-roledescription="branch">1 / 2</button>':'');track.append(article)}}
+history.addEventListener('scroll',render);history.scrollTop=800;render();
+})();</script>
